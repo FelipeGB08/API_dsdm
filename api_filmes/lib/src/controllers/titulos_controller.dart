@@ -12,22 +12,25 @@ class TitulosController {
 
   Router get router {
     final router = Router();
+    registerRoutes(router);
+    return router;
+  }
+
+  void registerRoutes(Router router) {
     router.get('/titulos', _listar);
     router.get('/titulos/<id>', _buscarPorId);
     router.post('/titulos', _criar);
     router.put('/titulos/<id>', _editar);
     router.delete('/titulos/<id>', _excluir);
     router.patch('/titulos/<id>/favorito', _alternarFavorito);
-    return router;
   }
 
-  static const _jsonHeaders = {'Content-Type': 'application/json; charset=utf-8'};
+  static const _jsonHeaders = {
+    'Content-Type': 'application/json; charset=utf-8',
+  };
 
-  Response _json(Object? body, {int statusCode = 200}) => Response(
-        statusCode,
-        body: jsonEncode(body),
-        headers: _jsonHeaders,
-      );
+  Response _json(Object? body, {int statusCode = 200}) =>
+      Response(statusCode, body: jsonEncode(body), headers: _jsonHeaders);
 
   Response _erro(String mensagem, {int statusCode = 400}) =>
       _json({'erro': mensagem}, statusCode: statusCode);
@@ -74,7 +77,8 @@ class TitulosController {
     final tituloId = int.tryParse(id);
     if (tituloId == null || tituloId <= 0) return _erro('ID inválido.');
 
-    final rows = _db.select('''
+    final rows = _db.select(
+      '''
       SELECT t.id, t.nome, t.tipo, t.sinopse, t.ano_lancamento, t.genero,
              t.favorito AS is_favorito, t.criado_em,
              COALESCE(AVG(a.nota), 0) AS media_avaliacoes,
@@ -83,16 +87,21 @@ class TitulosController {
       LEFT JOIN avaliacoes a ON a.titulo_id = t.id
       WHERE t.id = ?
       GROUP BY t.id
-    ''', [tituloId]);
+    ''',
+      [tituloId],
+    );
 
     if (rows.isEmpty) return _erro('Título não encontrado.', statusCode: 404);
 
-    final avaliacoes = _db.select('''
+    final avaliacoes = _db.select(
+      '''
       SELECT id, titulo_id, nota, comentario, criado_em
       FROM avaliacoes
       WHERE titulo_id = ?
       ORDER BY criado_em DESC, id DESC
-    ''', [tituloId]);
+    ''',
+      [tituloId],
+    );
 
     return _json({
       ...rows.first.toColumnMap(),
@@ -107,20 +116,36 @@ class TitulosController {
     final nome = body['nome'];
     final tipo = _normalizarTipo(body['tipo']?.toString().toLowerCase());
     final ano = body['ano_lancamento'];
-    if (nome is! String || nome.trim().isEmpty || tipo == null || ano is! int || ano <= 0) {
-      return _erro('Informe nome, tipo (Filme ou Série) e ano_lancamento válido.');
+    if (nome is! String ||
+        nome.trim().isEmpty ||
+        tipo == null ||
+        ano is! int ||
+        ano <= 0) {
+      return _erro(
+        'Informe nome, tipo (Filme ou Série) e ano_lancamento válido.',
+      );
     }
 
     final sinopse = body['sinopse'] is String ? body['sinopse'] as String : '';
     final genero = body['genero'] is String ? body['genero'] as String : '';
-    _db.execute('''
+    _db.execute(
+      '''
       INSERT INTO titulos (nome, tipo, sinopse, ano_lancamento, genero)
       VALUES (?, ?, ?, ?, ?)
-    ''', [nome.trim(), tipo, sinopse, ano, genero]);
+    ''',
+      [nome.trim(), tipo, sinopse, ano, genero],
+    );
 
     final id = _db.lastInsertRowId;
-    return _json({'id': id, 'nome': nome.trim(), 'tipo': tipo, 'sinopse': sinopse,
-      'ano_lancamento': ano, 'genero': genero, 'is_favorito': 0}, statusCode: 201);
+    return _json({
+      'id': id,
+      'nome': nome.trim(),
+      'tipo': tipo,
+      'sinopse': sinopse,
+      'ano_lancamento': ano,
+      'genero': genero,
+      'is_favorito': 0,
+    }, statusCode: 201);
   }
 
   Future<Response> _editar(Request request, String id) async {
@@ -135,35 +160,62 @@ class TitulosController {
     final nome = body['nome'];
     final tipo = _normalizarTipo(body['tipo']?.toString().toLowerCase());
     final ano = body['ano_lancamento'];
-    if (nome is! String || nome.trim().isEmpty || tipo == null || ano is! int || ano <= 0) {
-      return _erro('Informe nome, tipo (Filme ou Série) e ano_lancamento válido.');
+    if (nome is! String ||
+        nome.trim().isEmpty ||
+        tipo == null ||
+        ano is! int ||
+        ano <= 0) {
+      return _erro(
+        'Informe nome, tipo (Filme ou Série) e ano_lancamento válido.',
+      );
     }
     final sinopse = body['sinopse'] is String ? body['sinopse'] as String : '';
     final genero = body['genero'] is String ? body['genero'] as String : '';
     final favorito = body['is_favorito'];
-    if (favorito != null && favorito is! bool && favorito != 0 && favorito != 1) {
+    if (favorito != null &&
+        favorito is! bool &&
+        favorito != 0 &&
+        favorito != 1) {
       return _erro('is_favorito deve ser booleano, 0 ou 1.');
     }
-    final favoritoInt = favorito == true || favorito == 1 ? 1 :
-        favorito == false || favorito == 0 ? 0 : null;
+    final favoritoInt = favorito == true || favorito == 1
+        ? 1
+        : favorito == false || favorito == 0
+        ? 0
+        : null;
 
-    _db.execute('''
+    _db.execute(
+      '''
       UPDATE titulos
       SET nome = ?, tipo = ?, sinopse = ?, ano_lancamento = ?, genero = ?
           ${favoritoInt == null ? '' : ', favorito = ?'}
       WHERE id = ?
-    ''', [nome.trim(), tipo, sinopse, ano, genero,
-      if (favoritoInt != null) favoritoInt,
-      tituloId]);
+    ''',
+      [
+        nome.trim(),
+        tipo,
+        sinopse,
+        ano,
+        genero,
+        if (favoritoInt != null) favoritoInt,
+        tituloId,
+      ],
+    );
 
-    return _json({'mensagem': 'Título atualizado com sucesso.', 'id': tituloId});
+    return _json({
+      'mensagem': 'Título atualizado com sucesso.',
+      'id': tituloId,
+    });
   }
 
   Response _excluir(Request request, String id) {
     final tituloId = int.tryParse(id);
     if (tituloId == null || tituloId <= 0) return _erro('ID inválido.');
-    final existing = _db.select('SELECT id FROM titulos WHERE id = ?', [tituloId]);
-    if (existing.isEmpty) return _erro('Título não encontrado.', statusCode: 404);
+    final existing = _db.select('SELECT id FROM titulos WHERE id = ?', [
+      tituloId,
+    ]);
+    if (existing.isEmpty)
+      return _erro('Título não encontrado.', statusCode: 404);
 
     _db.execute('DELETE FROM titulos WHERE id = ?', [tituloId]);
     return _json({'mensagem': 'Título excluído com sucesso.'});
@@ -172,15 +224,18 @@ class TitulosController {
   Response _alternarFavorito(Request request, String id) {
     final tituloId = int.tryParse(id);
     if (tituloId == null || tituloId <= 0) return _erro('ID inválido.');
-    final existing = _db.select(
-      'SELECT favorito FROM titulos WHERE id = ?',
-      [tituloId],
-    );
-    if (existing.isEmpty) return _erro('Título não encontrado.', statusCode: 404);
+    final existing = _db.select('SELECT favorito FROM titulos WHERE id = ?', [
+      tituloId,
+    ]);
+    if (existing.isEmpty)
+      return _erro('Título não encontrado.', statusCode: 404);
 
     final atual = existing.first['favorito'] as int;
     final novoStatus = atual == 1 ? 0 : 1;
-    _db.execute('UPDATE titulos SET favorito = ? WHERE id = ?', [novoStatus, tituloId]);
+    _db.execute('UPDATE titulos SET favorito = ? WHERE id = ?', [
+      novoStatus,
+      tituloId,
+    ]);
     return _json({'id': tituloId, 'is_favorito': novoStatus});
   }
 
