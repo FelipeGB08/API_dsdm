@@ -14,8 +14,7 @@ Future<void> main() async {
   final router = Router();
 
   TitulosController(database.connection).registerRoutes(router);
-  AvaliacoesController(database.connection).registerRoutes(router);
-  ListasController(database.connection).registerRoutes(router);
+  ListasAvaliacoesController(database.connection).registerRoutes(router);
 
   final handler = const Pipeline()
       .addMiddleware(logRequests())

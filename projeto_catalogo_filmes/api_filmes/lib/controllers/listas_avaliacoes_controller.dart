@@ -4,6 +4,18 @@ import 'package:shelf/shelf.dart';
 import 'package:shelf_router/shelf_router.dart';
 import 'package:sqlite3/sqlite3.dart';
 
+/// Agrupa os endpoints de avaliações e listas personalizadas.
+class ListasAvaliacoesController {
+  ListasAvaliacoesController(this._db);
+
+  final Database _db;
+
+  void registerRoutes(Router router) {
+    AvaliacoesController(_db).registerRoutes(router);
+    ListasController(_db).registerRoutes(router);
+  }
+}
+
 /// Endpoints para criar e remover avaliações de títulos.
 class AvaliacoesController {
   AvaliacoesController(this._db);
