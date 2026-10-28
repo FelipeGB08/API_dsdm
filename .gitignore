@@ -1,0 +1,8 @@
+.dart_tool/
+.packages
+.pub/
+build/
+coverage/
+data/*.db
+data/*.db-shm
+data/*.db-wal
