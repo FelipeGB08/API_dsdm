@@ -60,6 +60,7 @@ class TitulosController {
     final where = conditions.isEmpty ? '' : 'WHERE ${conditions.join(' AND ')}';
     final rows = _db.select('''
       SELECT t.id, t.nome, t.tipo, t.sinopse, t.ano_lancamento, t.genero,
+             t.url_poster,
              t.favorito AS is_favorito, t.criado_em,
              COALESCE(AVG(a.nota), 0) AS media_avaliacoes,
              COUNT(a.id) AS quantidade_avaliacoes
@@ -70,7 +71,9 @@ class TitulosController {
       ORDER BY t.nome COLLATE NOCASE
     ''', values);
 
-    return _json(rows.map((row) => row.toColumnMap()).toList());
+    return _json(
+      rows.map((row) => Map<String, dynamic>.from(row)).toList(),
+    );
   }
 
   Response _buscarPorId(Request request, String id) {
@@ -80,6 +83,7 @@ class TitulosController {
     final rows = _db.select(
       '''
       SELECT t.id, t.nome, t.tipo, t.sinopse, t.ano_lancamento, t.genero,
+             t.url_poster,
              t.favorito AS is_favorito, t.criado_em,
              COALESCE(AVG(a.nota), 0) AS media_avaliacoes,
              COUNT(a.id) AS quantidade_avaliacoes
@@ -104,8 +108,9 @@ class TitulosController {
     );
 
     return _json({
-      ...rows.first.toColumnMap(),
-      'avaliacoes': avaliacoes.map((row) => row.toColumnMap()).toList(),
+      ...Map<String, dynamic>.from(rows.first),
+      'avaliacoes':
+          avaliacoes.map((row) => Map<String, dynamic>.from(row)).toList(),
     });
   }
 
@@ -128,12 +133,14 @@ class TitulosController {
 
     final sinopse = body['sinopse'] is String ? body['sinopse'] as String : '';
     final genero = body['genero'] is String ? body['genero'] as String : '';
+    final urlPoster =
+        body['url_poster'] is String ? body['url_poster'] as String : '';
     _db.execute(
       '''
-      INSERT INTO titulos (nome, tipo, sinopse, ano_lancamento, genero)
-      VALUES (?, ?, ?, ?, ?)
+      INSERT INTO titulos (nome, tipo, sinopse, ano_lancamento, genero, url_poster)
+      VALUES (?, ?, ?, ?, ?, ?)
     ''',
-      [nome.trim(), tipo, sinopse, ano, genero],
+      [nome.trim(), tipo, sinopse, ano, genero, urlPoster],
     );
 
     final id = _db.lastInsertRowId;
@@ -144,6 +151,7 @@ class TitulosController {
       'sinopse': sinopse,
       'ano_lancamento': ano,
       'genero': genero,
+      'url_poster': urlPoster,
       'is_favorito': 0,
     }, statusCode: 201);
   }
@@ -171,6 +179,8 @@ class TitulosController {
     }
     final sinopse = body['sinopse'] is String ? body['sinopse'] as String : '';
     final genero = body['genero'] is String ? body['genero'] as String : '';
+    final urlPoster =
+        body['url_poster'] is String ? body['url_poster'] as String : '';
     final favorito = body['is_favorito'];
     if (favorito != null &&
         favorito is! bool &&
@@ -187,7 +197,8 @@ class TitulosController {
     _db.execute(
       '''
       UPDATE titulos
-      SET nome = ?, tipo = ?, sinopse = ?, ano_lancamento = ?, genero = ?
+      SET nome = ?, tipo = ?, sinopse = ?, ano_lancamento = ?, genero = ?,
+          url_poster = ?
           ${favoritoInt == null ? '' : ', favorito = ?'}
       WHERE id = ?
     ''',
@@ -197,6 +208,7 @@ class TitulosController {
         sinopse,
         ano,
         genero,
+        urlPoster,
         if (favoritoInt != null) favoritoInt,
         tituloId,
       ],

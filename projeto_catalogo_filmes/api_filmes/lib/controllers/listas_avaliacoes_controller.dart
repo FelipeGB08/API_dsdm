@@ -122,7 +122,8 @@ class ListasController {
       SELECT l.id, l.nome, l.descricao, l.criada_em,
              t.id AS titulo_id, t.nome AS titulo_nome, t.tipo AS titulo_tipo,
              t.sinopse AS titulo_sinopse, t.ano_lancamento AS titulo_ano_lancamento,
-             t.genero AS titulo_genero, t.favorito AS titulo_is_favorito
+             t.genero AS titulo_genero, t.url_poster AS titulo_url_poster,
+             t.favorito AS titulo_is_favorito
       FROM listas l
       LEFT JOIN lista_titulos lt ON lt.lista_id = l.id
       LEFT JOIN titulos t ON t.id = lt.titulo_id
@@ -152,6 +153,7 @@ class ListasController {
           'sinopse': row['titulo_sinopse'],
           'ano_lancamento': row['titulo_ano_lancamento'],
           'genero': row['titulo_genero'],
+          'url_poster': row['titulo_url_poster'],
           'is_favorito': row['titulo_is_favorito'],
         });
       }

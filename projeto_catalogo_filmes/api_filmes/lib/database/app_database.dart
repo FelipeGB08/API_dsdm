@@ -30,6 +30,7 @@ class AppDatabase {
         sinopse TEXT NOT NULL DEFAULT '',
         ano_lancamento INTEGER NOT NULL CHECK (ano_lancamento > 0),
         genero TEXT NOT NULL DEFAULT '',
+        url_poster TEXT NOT NULL DEFAULT '',
         favorito INTEGER NOT NULL DEFAULT 0 CHECK (favorito IN (0, 1)),
         criado_em TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
       );
@@ -60,6 +61,15 @@ class AppDatabase {
       CREATE INDEX IF NOT EXISTS idx_lista_titulos_titulo_id
         ON lista_titulos(titulo_id);
     ''');
+
+    final colunas = db.select('PRAGMA table_info(titulos)');
+    final temUrlPoster =
+        colunas.any((coluna) => coluna['name'] == 'url_poster');
+    if (!temUrlPoster) {
+      db.execute(
+        "ALTER TABLE titulos ADD COLUMN url_poster TEXT NOT NULL DEFAULT ''",
+      );
+    }
   }
 
   static void _seedIfEmpty(Database db) {
